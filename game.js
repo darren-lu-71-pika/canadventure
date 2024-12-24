@@ -52,53 +52,5 @@ function showOptions() {
     // 显示选择按钮
     document.querySelector('.options').style.display = 'block';
     nextButton.style.display = 'none';  // 隐藏“下一页”按钮
-    textElement.innerText = steps[currentStep].text;
-}
+    textElement.innerT
 
-function hideOptions() {
-    // 隐藏选择按钮
-    document.querySelector('.options').style.display = 'none';
-    nextButton.style.display = 'block';  // 显示“下一页”按钮
-}
-
-function displayEnding() {
-    hideOptions();
-    let endingText = '';
-    if (score === 3) {
-        endingText = "結局 10-1 - [是Maggie！你認真對待感情，她決定提早跟你一起回來共同生活]";
-    } else if (score === 1 || score === 2) {
-        endingText = "結局 10-2 - [你搞砸了一切!你自己回來台灣，你太難過了於是自己坐在角落哭，抬起頭卻發現來接機的呂！因為他是你最好的兄弟]";
-    } else {
-        endingText = "結局 10-3 - [竟然是江！！！他見到你後熱情的接過你的行李，對你說\"我早知道你在加拿大的淫亂事跡，快跟我分享吧\"]";
-    }
-    displayText(endingText);
-}
-
-function nextPage() {
-    if (currentStep < steps.length) {
-        if (steps[currentStep].options) {
-            // 如果当前步骤有选项，跳过“下一页”按钮，由选择来控制
-            return;
-        }
-        displayText(steps[currentStep].text);
-        currentStep++;
-        if (currentStep < steps.length) {
-            if (steps[currentStep].options) {
-                showOptions();
-            } else {
-                hideOptions();
-                displayText(steps[currentStep].text);
-            }
-        } else {
-            displayEnding();
-        }
-    }
-}
-
-window.onload = function() {
-    // 游戏开始时只显示第一个情节文本，并隐藏选项按钮
-    displayText(steps[currentStep].text);
-    hideOptions();
-    
-    nextButton.addEventListener('click', nextPage);  // 按下“下一页”按钮触发
-}
