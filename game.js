@@ -31,14 +31,15 @@ function chooseOption(choice) {
         if (choice === "B") score++;
     }
     currentStep++;
-    
+
+    // 判断下一步是有选项的还是直接显示文本
     if (currentStep < steps.length) {
-        // 显示下一步
         if (steps[currentStep].options) {
             // 如果有选项，则显示选择按钮
             showOptions();
         } else {
             // 如果没有选项，直接显示文本
+            hideOptions();
             displayText(steps[currentStep].text);
         }
     } else {
@@ -48,7 +49,7 @@ function chooseOption(choice) {
 }
 
 function showOptions() {
-    // 隐藏按钮和显示选项
+    // 显示选择按钮
     document.querySelector('.options').style.display = 'block';
     textElement.innerText = steps[currentStep].text;
 }
@@ -72,6 +73,7 @@ function displayEnding() {
 }
 
 window.onload = function() {
+    // 游戏开始时只显示第一个情节文本，并隐藏选项按钮
     displayText(steps[currentStep].text);
-    showOptions();  // 显示选择按钮
+    hideOptions();
 }
