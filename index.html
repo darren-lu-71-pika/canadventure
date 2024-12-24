@@ -16,10 +16,15 @@
     <div id="game-container">
         <h1>歡迎來到加拿大冒險！</h1>
         <p id="text"></p>
-        <div class="options">
+        
+        <!-- 选项按钮 (默认隐藏) -->
+        <div class="options" style="display: none;">
             <button onclick="chooseOption('A')">A</button>
             <button onclick="chooseOption('B')">B</button>
         </div>
+
+        <!-- 下一页按钮 (默认显示) -->
+        <button id="nextButton" style="display: block;">下一頁</button>
     </div>
     <script src="game.js"></script>
 </body>
