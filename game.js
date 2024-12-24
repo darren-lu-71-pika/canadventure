@@ -3,6 +3,8 @@ let currentStep = 0;
 
 const textElement = document.getElementById('text');
 const nextButton = document.getElementById('nextButton');
+
+// 定义每一项的选项内容
 const options = {
     "A": ["哈魯", "maggie", "喝酒"],
     "B": ["AOI", "lynn", "喝爆幹多酒"]
@@ -11,11 +13,11 @@ const options = {
 const steps = [
     { text: "第1張圖 - [在你的好友呂協助之下，你到達了桃園機場，並且跟你的女朋友ET告別，讓她成為了你的前女友]" },
     { text: "第2張圖 - [你在加拿大拉麵店找到了工作，結交到了一群豬朋狗友（他們都比不上呂）]" },
-    { text: "第3張圖 - [你碰到讓你怦然心動的女孩，她是？]", options: ["A", "B"] },
+    { text: "第3張圖 - [你碰到讓你怦然心動的女孩，她是？]", options: ["哈魯", "AOI"] }, // 第3页
     { text: "第4張圖 - [你們交往不順利，最後還是分手了]" },
-    { text: "第5張圖 - [你換到了台灣餐廳工作，有兩個女同事看起來很閒，你要跟誰搭話]", options: ["A", "B"] },
+    { text: "第5張圖 - [你換到了台灣餐廳工作，有兩個女同事看起來很閒，你要跟誰搭話]", options: ["maggie", "lynn"] }, // 第5页
     { text: "第6張圖 - [你跟Maggie情投意合，再三考慮後還是在一起了]" },
-    { text: "第7張圖 - [你覺得維持關係很累，似乎什麼事都做不好，所以你開始逃避，每天晚上你都]", options: ["A", "B"] },
+    { text: "第7張圖 - [你覺得維持關係很累，似乎什麼事都做不好，所以你開始逃避，每天晚上你都]", options: ["喝酒", "喝爆幹多酒"] }, // 第7页
     { text: "第8張圖 - [聖誕節你去了加拿大宜蘭，留下美好回憶]" },
     { text: "第9張圖 - [回台灣的時刻到了！下飛機之後你看到的第一個認識的人是？]" },
     { text: "結局 - [根據分數顯示不同結局]" }
@@ -26,6 +28,7 @@ function displayText(text) {
 }
 
 function chooseOption(choice) {
+    // 选择 A 或 B 后根据选择更新分数
     if (choice === "B") score++;
 
     // 选择后，自动跳到下一步
@@ -34,10 +37,10 @@ function chooseOption(choice) {
     // 判断是否有选项的页面
     if (currentStep < steps.length) {
         if (steps[currentStep].options) {
-            showOptions();
+            showOptions(); // 如果有选项，显示选项
         } else {
             hideOptions();
-            displayText(steps[currentStep].text);
+            displayText(steps[currentStep].text); // 如果没有选项，直接显示文本
         }
     } else {
         // 游戏结束，显示结局
@@ -49,6 +52,13 @@ function showOptions() {
     // 显示选项按钮
     document.querySelector('.options').style.display = 'block';
     nextButton.style.display = 'none';  // 隐藏下一页按钮
+
+    const optionsText = steps[currentStep].options;
+    const buttons = document.querySelectorAll('.options button');
+    // 更新按钮文本为选项的具体内容
+    buttons[0].innerText = optionsText[0];  // A按钮显示选项A
+    buttons[1].innerText = optionsText[1];  // B按钮显示选项B
+
     textElement.innerText = steps[currentStep].text;
 }
 
