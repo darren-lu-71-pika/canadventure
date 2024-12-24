@@ -27,18 +27,17 @@ function displayText(text) {
 
 function chooseOption(choice) {
     // 处理选择后更新分数和步骤
-    if (steps[currentStep].options) {
-        if (choice === "B") score++;
-    }
+    if (choice === "B") score++;
+    
+    // 不管选择哪个，都会推进到下一步
     currentStep++;
     
     // 判断下一步是有选项的还是直接显示文本
     if (currentStep < steps.length) {
+        // 检查如果当前步骤需要选项，直接显示选项按钮
         if (steps[currentStep].options) {
-            // 如果有选项，则显示选择按钮
             showOptions();
         } else {
-            // 如果没有选项，直接显示文本
             hideOptions();
             displayText(steps[currentStep].text);
         }
@@ -52,5 +51,56 @@ function showOptions() {
     // 显示选择按钮
     document.querySelector('.options').style.display = 'block';
     nextButton.style.display = 'none';  // 隐藏“下一页”按钮
-    textElement.innerT
+    textElement.innerText = steps[currentStep].text;
+}
 
+function hideOptions() {
+    // 隐藏选择按钮
+    document.querySelector('.options').style.display = 'none';
+    nextButton.style.display = 'block';  // 显示“下一页”按钮
+}
+
+function displayEnding() {
+    hideOptions();
+    let endingText = '';
+    if (score === 3) {
+        endingText = "結局 10-1 - [竟然是江！！！他見到你後熱情的接過你的行李，對你說\"我早知道你在加拿大的淫亂事跡，快跟我分享吧\]";
+    } else if (score === 1 || score === 2) {
+        endingText = "結局 10-2 - [你搞砸了一切!你自己回來台灣，你太難過了於是自己坐在角落哭，抬起頭卻發現來接機的呂！因為他是你最好的兄弟]";
+    } else {
+        endingText = "結局 10-3 - [是Maggie！你認真對待感情，她決定提早跟你一起回來共同生活"]";
+    }
+    displayText(endingText);
+}
+
+function nextPage() {
+    if (currentStep < steps.length) {
+        // 对于第3、5、7步，有选项时可以选择一个并继续到下一页
+        if (currentStep === 2 || currentStep === 4 || currentStep === 6) {
+            return;
+        }
+        
+        // 直接显示下一页文本
+        displayText(steps[currentStep].text);
+        currentStep++;
+        
+        if (currentStep < steps.length) {
+            if (steps[currentStep].options) {
+                showOptions();
+            } else {
+                hideOptions();
+                displayText(steps[currentStep].text);
+            }
+        } else {
+            displayEnding();
+        }
+    }
+}
+
+window.onload = function() {
+    // 游戏开始时只显示第一个情节文本，并隐藏选项按钮
+    displayText(steps[currentStep].text);
+    hideOptions();
+    
+    nextButton.addEventListener('click', nextPage);  // 按下“下一页”按钮触发
+}
