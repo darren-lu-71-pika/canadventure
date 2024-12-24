@@ -2,7 +2,7 @@ let score = 0;
 let currentStep = 0;
 
 const textElement = document.getElementById('text');
-const buttons = document.querySelectorAll('button');
+const nextButton = document.getElementById('nextButton');
 const options = {
     "A": ["哈魯", "maggie", "喝酒"],
     "B": ["AOI", "lynn", "喝爆幹多酒"]
@@ -31,7 +31,7 @@ function chooseOption(choice) {
         if (choice === "B") score++;
     }
     currentStep++;
-
+    
     // 判断下一步是有选项的还是直接显示文本
     if (currentStep < steps.length) {
         if (steps[currentStep].options) {
@@ -51,12 +51,14 @@ function chooseOption(choice) {
 function showOptions() {
     // 显示选择按钮
     document.querySelector('.options').style.display = 'block';
+    nextButton.style.display = 'none';  // 隐藏“下一页”按钮
     textElement.innerText = steps[currentStep].text;
 }
 
 function hideOptions() {
     // 隐藏选择按钮
     document.querySelector('.options').style.display = 'none';
+    nextButton.style.display = 'block';  // 显示“下一页”按钮
 }
 
 function displayEnding() {
@@ -72,8 +74,31 @@ function displayEnding() {
     displayText(endingText);
 }
 
+function nextPage() {
+    if (currentStep < steps.length) {
+        if (steps[currentStep].options) {
+            // 如果当前步骤有选项，跳过“下一页”按钮，由选择来控制
+            return;
+        }
+        displayText(steps[currentStep].text);
+        currentStep++;
+        if (currentStep < steps.length) {
+            if (steps[currentStep].options) {
+                showOptions();
+            } else {
+                hideOptions();
+                displayText(steps[currentStep].text);
+            }
+        } else {
+            displayEnding();
+        }
+    }
+}
+
 window.onload = function() {
     // 游戏开始时只显示第一个情节文本，并隐藏选项按钮
     displayText(steps[currentStep].text);
     hideOptions();
+    
+    nextButton.addEventListener('click', nextPage);  // 按下“下一页”按钮触发
 }
