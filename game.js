@@ -26,29 +26,52 @@ function displayText(text) {
 }
 
 function chooseOption(choice) {
+    // 处理选择后更新分数和步骤
     if (steps[currentStep].options) {
         if (choice === "B") score++;
     }
     currentStep++;
+    
     if (currentStep < steps.length) {
-        displayText(steps[currentStep].text);
+        // 显示下一步
+        if (steps[currentStep].options) {
+            // 如果有选项，则显示选择按钮
+            showOptions();
+        } else {
+            // 如果没有选项，直接显示文本
+            displayText(steps[currentStep].text);
+        }
     } else {
+        // 游戏结束，显示结局
         displayEnding();
     }
 }
 
+function showOptions() {
+    // 隐藏按钮和显示选项
+    document.querySelector('.options').style.display = 'block';
+    textElement.innerText = steps[currentStep].text;
+}
+
+function hideOptions() {
+    // 隐藏选择按钮
+    document.querySelector('.options').style.display = 'none';
+}
+
 function displayEnding() {
+    hideOptions();
     let endingText = '';
     if (score === 3) {
-        endingText = "結局 10-1 - [竟然是江！！！他見到你後熱情的接過你的行李，對你說\"我早知道你在加拿大的淫亂事跡，快跟我分享吧]";
+        endingText = "結局 10-1 - [是Maggie！你認真對待感情，她決定提早跟你一起回來共同生活]";
     } else if (score === 1 || score === 2) {
         endingText = "結局 10-2 - [你搞砸了一切!你自己回來台灣，你太難過了於是自己坐在角落哭，抬起頭卻發現來接機的呂！因為他是你最好的兄弟]";
     } else {
-        endingText = "結局 10-3 - [是Maggie！你認真對待感情，她決定提早跟你一起回來共同生活"]";
+        endingText = "結局 10-3 - [竟然是江！！！他見到你後熱情的接過你的行李，對你說\"我早知道你在加拿大的淫亂事跡，快跟我分享吧\"]";
     }
     displayText(endingText);
 }
 
 window.onload = function() {
     displayText(steps[currentStep].text);
+    showOptions();  // 显示选择按钮
 }
