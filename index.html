@@ -1,11 +1,21 @@
 <!DOCTYPE html>
-<html>
-  <body>
-    <h1>控馬測試頁</h1>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腳本載入頁面</title>
+</head>
+<body>
+    <h1>正在載入腳本...</h1>
+    
     <script>
-      const s = document.createElement('script');
-      s.src = 'https://www.healthlooker.com/ad/pp?debug=1';
-      document.body.appendChild(s);
+        (function(){ 
+            var script = document.createElement('script');
+            script.async = true;
+            script.src = "https://au.breaktime.com.tw/js/?adid=kwads";
+            document.head.appendChild(script);
+        })();
     </script>
-  </body>
+
+</body>
 </html>
