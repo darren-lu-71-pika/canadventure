@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF 測試任務中心 - 強化除錯版</title>
+    <title>LIFF 測試任務中心 - 超級除錯版</title>
     <script src="https://static.line-scdn.net/liff/sdk/2.23.0/liff.js"></script>
     <style>
         body { 
@@ -74,15 +74,16 @@
             border-radius: 5px;
             padding: 10px;
             margin-top: 15px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             font-family: monospace;
-            font-size: 12px;
+            font-size: 11px;
         }
         .debug-log p {
             margin: 5px 0;
             padding: 3px;
             border-bottom: 1px solid #e9ecef;
+            word-break: break-all;
         }
         .info-row {
             margin: 10px 0;
@@ -105,7 +106,7 @@
 <body>
     <div class="container">
         <h1>🎯 Line 任務系統</h1>
-        <p style="text-align: center; color: #666; font-size: 14px;">強化除錯版 v2.0</p>
+        <p style="text-align: center; color: #666; font-size: 14px;">超級除錯版 v3.0</p>
 
         <div id="liff-status" class="status loading">正在初始化 LIFF...</div>
 
@@ -148,6 +149,7 @@
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSCWxqEMxkGRC-me5BIO-94u4IPpGWzPWp6OoBuZBpT3mOEu3GDz4vzQdX29BylXgq_Q/exec';
 
         let currentUserId = null;
+        let initTimeout = null;
 
         // ========== 除錯工具 ==========
         function addLog(message, type = 'info') {
@@ -165,79 +167,124 @@
             statusDiv.className = `status ${type}`;
         }
 
-        // ========== LIFF 初始化 ==========
+        // ========== LIFF 初始化（加強版） ==========
         function initializeLiff() {
+            addLog('🚀 應用程式啟動');
+            addLog(`當前網址: ${window.location.href}`);
+            addLog(`User Agent: ${navigator.userAgent.substring(0, 50)}...`);
+            addLog('---');
             addLog('開始初始化 LIFF...');
             addLog(`LIFF ID: ${MY_LIFF_ID}`);
             
-            liff.init({ liffId: MY_LIFF_ID })
+            // 設置 10 秒超時
+            initTimeout = setTimeout(() => {
+                addLog('❌ LIFF 初始化超時 (10秒)！', 'error');
+                updateStatus('初始化超時，可能是網路問題或 LIFF 設定錯誤', 'error');
+                addLog('請檢查：', 'error');
+                addLog('1. LIFF ID 是否正確', 'error');
+                addLog('2. Endpoint URL 是否正確設定', 'error');
+                addLog('3. 網路連線是否正常', 'error');
+            }, 10000);
+
+            liff.init({ 
+                liffId: MY_LIFF_ID,
+                withLoginOnExternalBrowser: true
+            })
             .then(() => {
-                addLog('✓ LIFF 初始化成功！', 'success');
+                clearTimeout(initTimeout);
+                addLog('✅ LIFF 初始化成功！', 'success');
                 updateStatus('LIFF 初始化成功', 'success');
                 
-                addLog(`登入狀態: ${liff.isLoggedIn() ? '已登入' : '未登入'}`);
-                addLog(`環境: ${liff.isInClient() ? 'LINE App 內' : '外部瀏覽器'}`);
+                // 詳細環境資訊
+                addLog(`登入狀態: ${liff.isLoggedIn() ? '✅ 已登入' : '❌ 未登入'}`);
+                addLog(`執行環境: ${liff.isInClient() ? 'LINE App 內' : '外部瀏覽器'}`);
+                addLog(`LIFF OS: ${liff.getOS()}`);
+                addLog(`LIFF 語言: ${liff.getLanguage()}`);
+                addLog(`LIFF 版本: ${liff.getVersion()}`);
+                addLog(`是否為 API 可用: ${liff.isApiAvailable('shareTargetPicker')}`);
                 
                 if (liff.isLoggedIn()) {
+                    addLog('---');
                     getUserProfile();
                 } else {
                     updateStatus('尚未登入 Line', 'error');
                     document.getElementById('liff-login').style.display = 'block';
-                    addLog('顯示登入按鈕', 'info');
+                    addLog('🔓 顯示登入按鈕');
                 }
             })
             .catch((err) => {
-                addLog(`✗ LIFF 初始化失敗: ${err.message}`, 'error');
+                clearTimeout(initTimeout);
+                addLog(`❌ LIFF 初始化失敗！`, 'error');
+                addLog(`錯誤類型: ${err.name}`, 'error');
+                addLog(`錯誤訊息: ${err.message}`, 'error');
+                addLog(`錯誤堆疊: ${err.stack}`, 'error');
                 updateStatus(`初始化失敗: ${err.message}`, 'error');
-                console.error('LIFF init error:', err);
+                
+                // 常見錯誤提示
+                if (err.message.includes('400')) {
+                    addLog('💡 可能原因：LIFF ID 錯誤或已被刪除', 'error');
+                } else if (err.message.includes('403')) {
+                    addLog('💡 可能原因：Endpoint URL 設定錯誤', 'error');
+                } else if (err.message.includes('network')) {
+                    addLog('💡 可能原因：網路連線問題', 'error');
+                }
             });
         }
 
         // ========== 登入處理 ==========
         function liffLogin() {
-            addLog('執行 LIFF 登入...');
+            addLog('🔐 執行 LIFF 登入...');
             liff.login({ redirectUri: window.location.href });
         }
 
         // ========== 獲取用戶資料 ==========
         function getUserProfile() {
-            addLog('開始獲取用戶資料...');
+            addLog('📋 開始獲取用戶資料...');
             updateStatus('正在獲取用戶資料...', 'loading');
             
             liff.getProfile()
             .then(profile => {
                 currentUserId = profile.userId;
                 
-                addLog(`✓ 成功獲取用戶資料`, 'success');
+                addLog(`✅ 成功獲取用戶資料`, 'success');
                 addLog(`- 名稱: ${profile.displayName}`);
-                addLog(`- User ID: ${currentUserId.substring(0, 10)}...`);
+                addLog(`- User ID: ${currentUserId}`);
+                addLog(`- 狀態訊息: ${profile.statusMessage || '(無)'}`);
+                addLog(`- 頭像 URL: ${profile.pictureUrl ? '有' : '無'}`);
                 
                 document.getElementById('user-name').textContent = profile.displayName;
                 document.getElementById('user-id-display').textContent = currentUserId;
                 
                 // 顯示任務區塊
                 document.getElementById('task-area').style.display = 'block';
-                addLog('✓ 顯示任務區塊', 'success');
+                addLog('✅ 顯示任務區塊', 'success');
                 
                 updateStatus('登入成功！', 'success');
+                addLog('---');
                 
                 // 獲取點數
                 fetchPoints(currentUserId);
             })
             .catch((err) => {
-                addLog(`✗ 獲取用戶資料失敗: ${err.message}`, 'error');
+                addLog(`❌ 獲取用戶資料失敗`, 'error');
+                addLog(`錯誤: ${err.message}`, 'error');
                 updateStatus(`無法獲取個人資料: ${err.message}`, 'error');
-                console.error('getProfile error:', err);
             });
         }
         
         // ========== 查詢點數 ==========
         function fetchPoints(userId) {
-            addLog('開始查詢點數...');
+            addLog('💰 開始查詢點數...');
             
-            fetch(`${APPS_SCRIPT_URL}?userId=${userId}&action=getPoints`)
+            const url = `${APPS_SCRIPT_URL}?userId=${userId}&action=getPoints`;
+            addLog(`請求 URL: ${url.substring(0, 100)}...`);
+            
+            fetch(url)
             .then(response => {
-                addLog(`伺服器回應狀態: ${response.status}`);
+                addLog(`伺服器回應狀態: ${response.status} ${response.statusText}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
                 return response.json();
             })
             .then(data => {
@@ -245,19 +292,20 @@
                 
                 if (data.status === 'success') {
                     document.getElementById('current-points').textContent = `${data.points} 點`;
-                    addLog(`✓ 當前點數: ${data.points}`, 'success');
+                    addLog(`✅ 當前點數: ${data.points}`, 'success');
                     
                     if (data.lastSignIn) {
                         document.getElementById('task-message').textContent = 
                             `上次簽到: ${data.lastSignIn}`;
+                        addLog(`上次簽到: ${data.lastSignIn}`);
                     }
                 } else {
-                    addLog(`✗ 查詢點數失敗: ${data.message}`, 'error');
+                    addLog(`❌ 查詢點數失敗: ${data.message}`, 'error');
                 }
             })
             .catch(err => {
-                addLog(`✗ 連線失敗: ${err.message}`, 'error');
-                console.error('Fetch error:', err);
+                addLog(`❌ 連線失敗: ${err.message}`, 'error');
+                addLog('請檢查 Apps Script URL 是否正確', 'error');
             });
         }
 
@@ -268,7 +316,7 @@
                 return;
             }
 
-            addLog('執行簽到任務...');
+            addLog('✍️ 執行簽到任務...');
             const btn = document.getElementById('sign-in-btn');
             btn.disabled = true;
             btn.textContent = '處理中...';
@@ -286,16 +334,16 @@
                 if (data.status === 'success') {
                     document.getElementById('current-points').textContent = `${data.newPoints} 點`;
                     document.getElementById('task-message').textContent = data.message;
-                    addLog(`✓ ${data.message}`, 'success');
+                    addLog(`✅ ${data.message}`, 'success');
                     alert(`🎉 ${data.message}\n當前點數: ${data.newPoints}`);
                 } else {
                     document.getElementById('task-message').textContent = data.message;
-                    addLog(`✗ ${data.message}`, 'error');
+                    addLog(`❌ ${data.message}`, 'error');
                     alert(data.message);
                 }
             })
             .catch(err => {
-                addLog(`✗ 簽到失敗: ${err.message}`, 'error');
+                addLog(`❌ 簽到失敗: ${err.message}`, 'error');
                 btn.disabled = false;
                 btn.textContent = '📝 點擊簽到 (+10點)';
                 alert('簽到失敗，請稍後再試');
@@ -303,8 +351,6 @@
         }
 
         // ========== 應用程式啟動 ==========
-        addLog('應用程式啟動');
-        addLog(`當前網址: ${window.location.href}`);
         initializeLiff();
     </script>
 </body>
