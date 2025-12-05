@@ -37,4 +37,69 @@
     
     <script>
         // 【重要：保持您已填寫的 LIFF ID】
-        const MY
+        const MY_LIFF_ID = '2008638301-NeqDPLxQ'; 
+        
+        // 【重要：保持您已填寫的 Apps Script URL】
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSCWxqEMxkGRC-me5BIO-94u4IPpGWzPWp6OoBuZBpT3mOEu3GDz4vzQdX29BylXgq_Q/exec'; 
+
+        let currentUserId = null;
+
+        /** 1. 初始化 LIFF 應用程式 */
+        function initializeLiff() {
+            liff.init({
+                liffId: MY_LIFF_ID
+            })
+            .then(() => {
+                document.getElementById('liff-status').textContent = 'LIFF 初始化成功！';
+                if (liff.isLoggedIn()) {
+                    getUserProfile();
+                } else {
+                    document.getElementById('liff-status').textContent = '未登入 Line。';
+                    document.getElementById('liff-login').style.display = 'block';
+                }
+            })
+            .catch((err) => {
+                // 更詳細的初始化失敗訊息
+                document.getElementById('liff-status').innerHTML = 'LIFF 初始化失敗：<br>' + err.message;
+                document.getElementById('liff-status').classList.add('error');
+            });
+        }
+
+        /** 2. 登入處理 */
+        function liffLogin() {
+            liff.login({ redirectUri: window.location.href });
+        }
+
+        /** 3. 獲取用戶資料 (已移除 fetchPoints) */
+        function getUserProfile() {
+            liff.getProfile()
+            .then(profile => {
+                currentUserId = profile.userId;
+                document.getElementById('user-name').textContent = profile.displayName;
+                document.getElementById('user-id-display').textContent = currentUserId;
+                document.getElementById('task-area').style.display = 'block';
+                
+                // 【已註解】：暫時移除 fetchPoints 以測試 LIFF 登入是否成功
+                // fetchPoints(currentUserId);
+                
+                document.getElementById('liff-status').textContent = 'Line 登入與資料獲取成功！(連線測試已暫停)';
+
+            })
+            .catch((err) => {
+                // 【關鍵修正】：顯示更具體的錯誤
+                document.getElementById('liff-status').innerHTML = '獲取個人資料失敗 (可能權限不足)：<br>' + err.message;
+                document.getElementById('liff-status').classList.add('error');
+            });
+        }
+        
+        // 4 & 5. fetchPoints 和 signInTask 函數被保留，但不會被呼叫。
+        // ... (以下函數不變，但請注意它們現在不會被自動執行)
+        function fetchPoints(userId) { /* 函數內容不變 */ }
+        function signInTask() { /* 函數內容不變 */ }
+
+
+        // 應用程式啟動點
+        initializeLiff();
+    </script>
+</body>
+</html>
