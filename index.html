@@ -3,19 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>腳本載入頁面</title>
+    <title>LIFF 測試任務中心 - V0.1</title>
+    <script src="https://static.line-scdn.net/liff/sdk/2.2.0/liff.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+        .container { max-width: 400px; margin: 0 auto; }
+        .info-box { border: 1px solid #ccc; padding: 15px; margin-top: 20px; border-radius: 8px; text-align: left; }
+        h1 { color: #00B900; }
+        button { background-color: #00B900; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background-color: #009900; }
+        .error { color: red; }
+    </style>
 </head>
 <body>
-    <h1>正在載入腳本...</h1>
+    <div class="container">
+        <h1>Line 任務系統測試版</h1>
+        <p>狀態: <span id="liff-status">初始化中...</span></p>
+
+        <div class="info-box">
+            <h2>會員資訊</h2>
+            <p>Line 名稱: <strong id="user-name">--</strong></p>
+            <p>User ID: <code id="user-id-display">--</code></p>
+            <p>當前點數: <strong id="current-points">0</strong> 點</p>
+        </div>
+        
+        <div class="info-box" id="task-area" style="display:none;">
+            <h2>每日任務</h2>
+            <button onclick="signInTask()">點擊簽到 (獲得 10 點)</button>
+        </div>
+
+        <button id="liff-login" onclick="liffLogin()" style="display:none;">請點擊登入 Line</button>
+    </div>
     
     <script>
-        (function(){ 
-            var script = document.createElement('script');
-            script.async = true;
-            script.src = "https://au.breaktime.com.tw/js/?adid=kwads";
-            document.head.appendChild(script);
-        })();
-    </script>
+        // 【重要：請替換此處為您的 LIFF ID】
+        const MY_LIFF_ID = '2008638301-NeqDPLxQ'; 
+        
+        // 【重要：請在下一階段獲得 Apps Script URL 後替換此處】
+        // 暫時使用一個佔位符，確保程式碼不會崩潰。
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_APPS_SCRIPT_DEPLOYMENT_ID/exec'; 
 
+        // 全域變數，用於儲存當前登入用戶的 ID
+        let currentUserId = null;
+
+        /** 1. 初始化 LIFF 應用程式 */
+        function initializeLiff() {
+            liff.init({
+                liffId: MY_LIFF_ID
+            })
+            .then(() => {
+                document.getElementById('liff-status').textContent = 'LIFF 初始化成功！';
+                if (liff.isLoggedIn()) {
+                    getUserProfile();
+                } else {
+                    document.getElementById('liff-status').textContent = '未登入 Line。';
+                    document.getElementById('liff-login').style.display = 'block';
+                }
+            })
+            .catch((err) => {
+                document.getElementById('liff-status').textContent = 'LIFF 初始化失敗：' + err;
+                document.getElementById('liff-status').classList.add('error');
+            });
+        }
+
+        /** 2. 登入處理 */
+        function liffLogin() {
+            // 導向 Line 登入頁面，登入成功後會自動跳回當前頁面
+            liff.login({ redirectUri: window.location.href });
+        }
+
+        /** 3. 獲取用戶資料 */
+        function getUserProfile() {
+            liff.getProfile()
+            .then(profile => {
+                currentUserId = profile.userId;
+                document.getElementById('user-name').textContent = profile.displayName;
+                document.getElementById('user-id-display').textContent = currentUserId;
+                document.getElementById('task-area').style.display = 'block';
+                
+                // 獲取到 UserID 後，立即查詢點數
+                fetchPoints(currentUserId);
+            })
+            .catch((err) => {
+                document.getElementById('liff-status').textContent = '獲取個人資料失敗：' + err;
+                document.getElementById('liff-status').classList.add('error');
+            });
+        }
+
+        /** 4. 查詢點數 (連線 Apps Script API) */
+        function fetchPoints(userId) {
+            // 使用 GET 請求查詢點數
+            const url = `${APPS_SCRIPT_URL}?action=getPoints&userId=${userId}`;
+            
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('current-points').textContent = data.points;
+                        document.getElementById('liff-status').textContent = `歡迎，點數已更新。上次簽到: ${data.lastSignIn || '無'}`;
+                    } else {
+                        document.getElementById('liff-status').textContent = `點數查詢錯誤: ${data.message}`;
+                        document.getElementById('liff-status').classList.add('error');
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('liff-status').textContent = '連線後端伺服器失敗，請檢查 Apps Script 設定。';
+                    document.getElementById('liff-status').classList.add('error');
+                    console.error('API 請求失敗:', err);
+                });
+        }
+
+        /** 5. 簽到任務 (連線 Apps Script API) */
+        function signInTask() {
+            if (!currentUserId) {
+                alert('用戶 ID 尚未取得，請重新整理頁面。');
+                return;
+            }
+
+            // 使用 POST 請求發送簽到動作
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                // 以 URL 參數形式傳遞 action 和 userId
+                body: `action=signIn&userId=${currentUserId}` 
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    fetchPoints(currentUserId); // 簽到成功後，重新查詢點數
+                } else {
+                    alert('簽到失敗: ' + data.message);
+                }
+            })
+            .catch(err => {
+                alert('簽到請求發送失敗，請檢查網路。');
+                console.error('簽到請求失敗:', err);
+            });
+        }
+
+        // 應用程式啟動點
+        initializeLiff();
+    </script>
 </body>
 </html>
