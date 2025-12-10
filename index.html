@@ -3,46 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF 任務系統 (CDN救援版)</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/liff-type/2.22.3/liff.js"></script>
+    <title>LIFF 核彈測試版</title>
+    <script src="https://static.line-scdn.net/liff/sdk/2/liff.js"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; padding: 20px; background-color: #f5f5f5; }
         .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #00B900; }
-        .info-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
-        .points { font-size: 36px; color: #00B900; font-weight: bold; text-align: center; margin: 15px 0; }
+        h2 { text-align: center; color: #d32f2f; }
+        .info-box { background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffeeba; }
+        .points { font-size: 36px; color: #d35400; font-weight: bold; text-align: center; margin: 15px 0; }
+        
         button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; cursor: pointer; color: white; transition: 0.2s; }
         .btn-sign { background-color: #00B900; }
         .btn-redeem { background-color: #FF5722; }
         .btn-disabled { background-color: #ccc; cursor: not-allowed; }
-        #coupon-area { display: none; background: #fff3cd; padding: 15px; border: 2px dashed #ffc107; text-align: center; margin-top: 15px; border-radius: 8px; }
-        #coupon-code { font-size: 24px; font-weight: bold; color: #d35400; margin-top: 5px; }
-        .log { font-size: 11px; color: #999; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; font-family: monospace; }
+        
+        .log { font-size: 11px; color: #999; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; font-family: monospace; max-height: 200px; overflow-y: auto;}
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🚀 任務系統</h2>
+        <h2>☢️ 強制略過模式</h2>
         
-        <div id="loading" style="text-align: center;">
-            <p>正在連線...</p>
-            <p style="font-size:12px; color:#999;">(使用救援線路)</p>
+        <div id="loading" style="text-align: center; padding: 20px;">
+            <p>正在嘗試連線...</p>
+            <p style="font-size:12px; color:#999;">(超過3秒將自動切換)</p>
         </div>
 
         <div id="main-area" style="display:none;">
             <div class="info-box">
-                <div>嗨，<span id="user-name">--</span></div>
+                <div style="font-weight:bold; color:#856404;">⚠️ 目前狀態：<span id="connection-status">正常</span></div>
+                <hr style="border:0; border-top:1px solid #ffeeba; margin:10px 0;">
+                <div>用戶：<span id="user-name">--</span></div>
+                <div style="font-size:10px; color:#999;" id="user-id">--</div>
                 <div class="points"><span id="points-val">--</span> 點</div>
-                <div style="text-align:center; font-size:12px; color:#999;" id="last-sign">上次簽到: --</div>
+                <div style="text-align:center; font-size:12px; color:#666;" id="last-sign">上次簽到: --</div>
             </div>
 
             <button id="btn-sign" class="btn-sign" onclick="doAction('signIn')">📝 每日簽到 (+10點)</button>
             <button id="btn-redeem" class="btn-redeem" onclick="doAction('redeem')">🎁 兌換序號 (扣50點)</button>
-            
-            <div id="coupon-area">
-                <div>🎉 兌換成功！您的序號：</div>
-                <div id="coupon-code"></div>
-            </div>
         </div>
 
         <div class="log" id="log"></div>
@@ -50,54 +48,121 @@
 
     <script>
         const MY_LIFF_ID = '2008638301-NeqDPLxQ'; 
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz2gqv4PhFnhD10tCIx6rKQWH_fLE4IDuNVC1q7SmmNzce-5eFsiHT-gDjvK2AawuKA0Q/exec'; 
+        // 你的 GAS 網址
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSCWxqEMxkGRC-me5BIO-94u4IPpGWzPWp6OoBuZBpT3mOEu3GDz4vzQdX29BylXgq_Q/exec'; 
 
         let myUserId = '';
+        let isMockMode = false;
 
         function log(msg) {
             const el = document.getElementById('log');
-            el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + el.innerHTML;
+            const t = new Date().toLocaleTimeString('zh-TW', {hour12:false});
+            el.innerHTML = `[${t}] ${msg}<br>` + el.innerHTML;
         }
 
         window.onload = function() {
-            log('開始載入...');
+            log('頁面載入，開始計時...');
             
-            // 檢查 liff 是否載入成功
-            if (!window.liff) {
-                alert('嚴重錯誤：LIFF SDK 無法載入 (即使換了線路)');
-                return;
-            }
+            // 🔥 核心邏輯：設定 3 秒超時
+            // 如果 3 秒後还没初始化成功，直接強制進入
+            const timer = setTimeout(() => {
+                if (!myUserId) {
+                    log('⏳ 連線逾時！啟動強制模式');
+                    startMockMode();
+                }
+            }, 3000);
 
-            liff.init({ liffId: MY_LIFF_ID })
-                .then(() => {
-                    log('LIFF 初始化成功');
-                    if (!liff.isLoggedIn()) {
-                        liff.login();
-                        return;
-                    }
-                    return liff.getProfile();
-                })
-                .then(profile => {
-                    if (!profile) return;
-                    myUserId = profile.userId;
-                    document.getElementById('user-name').innerText = profile.displayName;
-                    
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('main-area').style.display = 'block';
-                    
-                    doAction('getPoints');
-                })
-                .catch(err => {
-                    log('錯誤: ' + err.message);
-                    alert('初始化失敗: ' + err.message);
-                });
+            // 嘗試正常連線
+            try {
+                if (!window.liff) throw new Error('SDK 未載入');
+                
+                liff.init({ liffId: MY_LIFF_ID })
+                    .then(() => {
+                        clearTimeout(timer); // 成功了就取消計時
+                        log('✅ LIFF 連線成功');
+                        if (!liff.isLoggedIn()) {
+                            liff.login();
+                        } else {
+                            return liff.getProfile();
+                        }
+                    })
+                    .then(profile => {
+                        if (profile) initUser(profile.userId, profile.displayName, 'LINE 正式連線');
+                    })
+                    .catch(err => {
+                        log('❌ LIFF 錯誤: ' + err.message);
+                        // 失敗也沒關係，計時器會救我們
+                    });
+            } catch (e) {
+                log('❌ SDK 嚴重錯誤，等待倒數...');
+            }
         };
 
-        function doAction(actionName) {
-            if (!myUserId) return;
-            setLoading(true);
+        function startMockMode() {
+            isMockMode = true;
+            const randomId = 'TEST_' + Math.floor(Math.random() * 10000);
+            initUser(randomId, '測試人員(強制)', '⚠️ 偽造連線模式');
+        }
+
+        function initUser(id, name, statusText) {
+            myUserId = id;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('main-area').style.display = 'block';
             
-            // 使用 no-cors 模式或許能避開某些擋截，但這裡先維持標準 POST
+            document.getElementById('user-name').innerText = name;
+            document.getElementById('user-id').innerText = id;
+            document.getElementById('connection-status').innerText = statusText;
+            
+            if (isMockMode) {
+                document.getElementById('connection-status').style.color = 'red';
+            } else {
+                document.getElementById('connection-status').style.color = 'green';
+            }
+
+            // 雖然是假身分，但後端 GAS 是真的，所以這裡會真的去打 API
+            doAction('getPoints');
+        }
+
+        function doAction(actionName) {
+            log(`呼叫後端: ${actionName}...`);
+            setLoading(true);
+
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `userId=${myUserId}&action=${actionName}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                setLoading(false);
+                log(`回應: ${JSON.stringify(data)}`);
+                
+                if (data.status === 'success') {
+                    if (data.points !== undefined) document.getElementById('points-val').innerText = data.points;
+                    if (data.newPoints !== undefined) document.getElementById('points-val').innerText = data.newPoints;
+                    if (data.lastSignIn) document.getElementById('last-sign').innerText = '上次簽到: ' + data.lastSignIn;
+                    
+                    if (actionName === 'redeem') {
+                        alert(`🎉 兌換成功！\n序號：${data.couponCode}`);
+                    } else {
+                        // 簽到成功
+                        // alert(data.message); 
+                    }
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            })
+            .catch(err => {
+                setLoading(false);
+                log('連線失敗: ' + err.message);
+                alert('連線失敗，請檢查 GAS');
+            });
+        }
+
+        function setLoading(isLoading) {
+            const btns = document.querySelectorAll('button');
+            btns.forEach(b => b.disabled = isLoading);
+        }
+    </script>
+</body>
+</html>
