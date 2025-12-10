@@ -3,113 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF 登入測試</title>
+    <title>LIFF 任務系統</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-            text-align: center;
-        }
-        #profile {
-            display: none; /* 預設隱藏，登入後顯示 */
-            margin-top: 20px;
-        }
-        img {
-            border-radius: 50%;
-            width: 100px;
-            height: 100px;
-            margin-bottom: 10px;
-        }
-        button {
-            background-color: #06C755;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            display: none; /* 預設隱藏，沒登入才顯示 */
-        }
+        body { font-family: "Microsoft JhengHei", sans-serif; padding: 20px; background-color: #f5f5f5; text-align: center; }
+        
+        /* 個人資料區 */
+        #profile { display: none; background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        img { border-radius: 50%; width: 80px; height: 80px; margin-bottom: 10px; border: 3px solid #06C755; }
+        
+        /* 點數顯示 */
+        .points-box { font-size: 24px; color: #06C755; font-weight: bold; margin: 10px 0; }
+        .sub-text { font-size: 12px; color: #999; }
+
+        /* 按鈕樣式 */
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-login { background-color: #06C755; display: none; } /* 預設隱藏 */
+        .btn-sign { background-color: #00B900; }
+        .btn-redeem { background-color: #FF5722; }
+        .btn-disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        /* 載入中遮罩 */
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; justify-content: center; align-items: center; z-index: 999; flex-direction: column;}
+        
+        /* 任務區塊 (預設隱藏) */
+        #task-area { display: none; }
     </style>
 </head>
 <body>
 
-    <h2>LIFF 登入頁面</h2>
-    
-    <p id="status">正在初始化 LIFF...</p>
+    <div id="loading">
+        <p>🚀 系統啟動中...</p>
+    </div>
 
-    <button id="btnLogin">登入 LINE</button>
+    <h2>LIFF 任務系統</h2>
+
+    <button id="btnLogin" class="btn-login">登入 LINE 帳號</button>
 
     <div id="profile">
-        <img id="pictureUrl" src="" alt="User Picture">
+        <img id="pictureUrl" src="" alt="User">
         <h3 id="displayName"></h3>
-        <p>User ID: <span id="userId"></span></p>
-        <p>Status: <span id="statusMessage"></span></p>
+        <div class="points-box"><span id="points-val">--</span> 點</div>
+        <div class="sub-text" id="last-sign">上次簽到: --</div>
+    </div>
+
+    <div id="task-area">
+        <button id="btn-sign" class="btn-sign" onclick="doAction('signIn')">📝 每日簽到 (+10點)</button>
+        <button id="btn-redeem" class="btn-redeem" onclick="doAction('redeem')">🎁 兌換序號 (扣50點)</button>
     </div>
 
     <script>
         // ==========================================
-        // ▼▼▼ 請在此填入你的 LIFF ID ▼▼▼
-        // 格式通常是：1234567890-AbCdEfGh
-        // ==========================================
-        
         const myLiffId = "2008638301-NeqDPLxQ";
-
+        // 你的 GAS 後端網址
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSCWxqEMxkGRC-me5BIO-94u4IPpGWzPWp6OoBuZBpT3mOEu3GDz4vzQdX29BylXgq_Q/exec';
         // ==========================================
-        // ▲▲▲ 設定結束 ▲▲▲
-        // ==========================================
 
+        let myUserId = '';
+
+        // 1. 初始化 LIFF
         function initializeLiff(liffId) {
-            liff.init({
-                liffId: liffId
-            }).then(() => {
-                // 初始化成功
-                initializeApp();
-            }).catch((err) => {
-                document.getElementById('status').innerText = 'LIFF 初始化失敗: ' + err;
-            });
+            liff.init({ liffId: liffId })
+                .then(() => {
+                    initializeApp();
+                })
+                .catch((err) => {
+                    alert('初始化失敗: ' + err);
+                    document.getElementById('loading').style.display = 'none';
+                });
         }
 
         function initializeApp() {
-            // 檢查是否已登入
+            document.getElementById('loading').style.display = 'none';
+
             if (liff.isLoggedIn()) {
-                document.getElementById('status').innerText = '登入成功！';
                 getProfile();
             } else {
-                // 如果沒登入（通常發生在外部瀏覽器打開時）
-                document.getElementById('status').innerText = '尚未登入，請點擊按鈕';
                 document.getElementById('btnLogin').style.display = 'inline-block';
             }
         }
 
-        // 綁定登入按鈕事件
+        // 綁定登入按鈕
         document.getElementById('btnLogin').onclick = function() {
             if (!liff.isLoggedIn()) {
                 liff.login();
             }
         };
 
-        // 取得並顯示使用者資料
+        // 2. 取得資料並呼叫後端
         function getProfile() {
-            liff.getProfile().then(profile => {
-                document.getElementById('displayName').innerText = profile.displayName;
-                document.getElementById('userId').innerText = profile.userId;
-                document.getElementById('statusMessage').innerText = profile.statusMessage; // 個簽
+            // 顯示載入中
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('loading').innerHTML = '<p>正在讀取資料...</p>';
 
+            liff.getProfile().then(profile => {
+                myUserId = profile.userId;
+                document.getElementById('displayName').innerText = profile.displayName;
                 if (profile.pictureUrl) {
                     document.getElementById('pictureUrl').src = profile.pictureUrl;
                 }
                 
-                // 顯示資料區塊
+                // 顯示介面
                 document.getElementById('profile').style.display = 'block';
-                document.getElementById('btnLogin').style.display = 'none'; // 隱藏登入按鈕
+                document.getElementById('task-area').style.display = 'block';
+                document.getElementById('btnLogin').style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
+
+                // 🔥 關鍵一步：立刻去問 GAS 點數多少
+                doAction('getPoints');
+
             }).catch(err => {
                 console.error('取得資料失敗', err);
+                alert('取得資料失敗: ' + err);
+                document.getElementById('loading').style.display = 'none';
             });
         }
 
-        // 執行初始化
+        // 3. 呼叫 GAS 後端 (簽到、查詢、兌換)
+        function doAction(actionName) {
+            if (!myUserId) return;
+            
+            // 讓按鈕變灰，避免連點
+            setBtnLoading(true);
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `userId=${myUserId}&action=${actionName}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                setBtnLoading(false);
+                
+                if (data.status === 'success') {
+                    // 更新介面數字
+                    if (data.points !== undefined) updatePointsUI(data.points);
+                    if (data.newPoints !== undefined) updatePointsUI(data.newPoints);
+                    if (data.lastSignIn) document.getElementById('last-sign').innerText = '上次簽到: ' + data.lastSignIn;
+
+                    // 彈出訊息
+                    if (actionName === 'signIn') alert(data.message);
+                    if (actionName === 'redeem') alert(`🎉 兌換成功！序號：${data.couponCode}`);
+
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            })
+            .catch(err => {
+                setBtnLoading(false);
+                alert('連線失敗，請檢查網路或 GAS');
+            });
+        }
+
+        function updatePointsUI(pts) {
+            document.getElementById('points-val').innerText = pts;
+            const btnRedeem = document.getElementById('btn-redeem');
+            
+            if (pts < 50) {
+                btnRedeem.classList.add('btn-disabled');
+                btnRedeem.innerText = `🎁 點數不足 (${pts}/50)`;
+            } else {
+                btnRedeem.classList.remove('btn-disabled');
+                btnRedeem.innerText = `🎁 兌換序號 (扣50點)`;
+            }
+        }
+
+        function setBtnLoading(isLoading) {
+            const btns = document.querySelectorAll('#task-area button');
+            btns.forEach(b => b.disabled = isLoading);
+        }
+
+        // 啟動！
         initializeLiff(myLiffId);
     </script>
 </body>
