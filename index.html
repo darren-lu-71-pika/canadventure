@@ -3,94 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF 登入診斷</title>
-    <script src="https://static.line-scdn.net/liff/sdk/2/liff.js"></script>
+    <title>LIFF 暴力除錯</title>
     <style>
-        body { padding: 20px; font-family: sans-serif; word-break: break-all; }
-        #log { background: #f0f0f0; padding: 10px; border: 1px solid #ccc; font-family: monospace; }
-        .success { color: green; font-weight: bold; }
-        .error { color: red; font-weight: bold; }
-        button { font-size: 20px; padding: 15px; width: 100%; margin-top: 20px; }
+        body { padding: 20px; font-family: sans-serif; }
+        #log { background: #eee; padding: 10px; border: 1px solid #999; min-height: 100px; font-family: monospace; }
+        h2 { color: #d32f2f; }
+        button { font-size: 20px; padding: 20px; width: 100%; margin-top: 20px; background: #00B900; color: white; border: none; border-radius: 8px;}
     </style>
+    
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // 初始化 vConsole
+        var vConsole = new VConsole();
+    </script>
 </head>
 <body>
-    <h2>🕵️ LIFF 登入診斷</h2>
-    <div id="status">準備中...</div>
+    <h2>🤬 暴力除錯模式</h2>
+    <p>請點擊右下角的綠色按鈕 `vConsole`，然後點 `Log` 頁籤截圖給我看。</p>
+    
+    <div id="status">程式載入中...</div>
     <div id="log"></div>
-
-    <button id="loginBtn" style="display:none;" onclick="liff.login()">手動登入 LINE</button>
+    
+    <button onclick="window.location.reload()">🔄 重新整理頁面</button>
 
     <script>
-        const MY_LIFF_ID = '2008638301-NeqDPLxQ'; 
+        // 設定你的 LIFF ID
+        const MY_LIFF_ID = '2008638301-NeqDPLxQ';
 
-        function log(msg) {
-            const dom = document.getElementById('log');
-            dom.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
-            console.log(msg);
+        function myLog(msg) {
+            const el = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML += `[${time}] ${msg}<br>`;
+            console.log(msg); // 這會印在 vConsole 裡
         }
 
-        function setStatus(msg, color='black') {
-            const dom = document.getElementById('status');
-            dom.innerText = msg;
-            dom.style.color = color;
-        }
+        // 2. 捕捉全域錯誤 (如果語法錯了，這裡會抓到)
+        window.onerror = function(message, source, lineno, colno, error) {
+            myLog(`❌ 嚴重錯誤: ${message}`);
+            alert(`抓到了！錯誤：${message}`);
+        };
 
-        window.onload = function() {
-            log('頁面載入完成');
-            log('正在檢查 LIFF SDK...');
+        // 3. 動態載入 LIFF SDK (監控它到底有沒有載下來)
+        myLog('開始下載 LIFF SDK...');
+        
+        const script = document.createElement('script');
+        script.src = 'https://static.line-scdn.net/liff/sdk/2/liff.js';
+        
+        script.onload = function() {
+            myLog('SDK 下載成功，開始 init...');
+            initLiff();
+        };
+        
+        script.onerror = function() {
+            myLog('❌ SDK 下載失敗！可能是網路擋住了');
+            alert('SDK 下載失敗，請檢查網路');
+        };
+        
+        document.head.appendChild(script);
 
-            if (!liff) {
-                setStatus('LIFF SDK 載入失敗', 'red');
-                log('錯誤: window.liff 未定義，可能是網路擋住了 SDK');
+        // 4. 初始化邏輯
+        function initLiff() {
+            if (!window.liff) {
+                myLog('❌ window.liff 還是空的！見鬼了');
                 return;
             }
 
-            log(`SDK 版本: ${liff.getVersion()}`);
-            log('開始執行 liff.init()...');
-
             liff.init({ liffId: MY_LIFF_ID })
                 .then(() => {
-                    log('✅ liff.init() 成功！');
-                    
-                    // 檢查是否在 LINE App 內
-                    if (liff.isInClient()) {
-                        log('環境: LINE App 內');
-                        checkLogin();
+                    myLog('✅ LIFF init 成功！');
+                    if (liff.isLoggedIn()) {
+                        liff.getProfile().then(p => {
+                            myLog(`🎉 抓到人名: ${p.displayName}`);
+                            document.getElementById('status').innerText = `嗨，${p.displayName}`;
+                            alert(`成功！抓到: ${p.displayName}`);
+                        });
                     } else {
-                        log('環境: 外部瀏覽器');
-                        checkLogin();
+                        myLog('尚未登入，準備跳轉...');
+                        liff.login();
                     }
                 })
                 .catch(err => {
-                    setStatus('初始化失敗', 'red');
-                    log(`❌ liff.init 錯誤: ${err.code} - ${err.message}`);
-                    log('請檢查網路連線，或是否使用了 VPN/擋廣告軟體');
+                    myLog(`❌ Init 失敗: ${err.code} ${err.message}`);
+                    // 這裡最重要，顯示詳細錯誤
+                    console.error(err); 
+                    alert(`Init 失敗: ${err.message}`);
                 });
-        };
-
-        function checkLogin() {
-            if (liff.isLoggedIn()) {
-                setStatus('登入成功！', 'green');
-                log('已取得登入狀態');
-                
-                liff.getProfile()
-                    .then(profile => {
-                        log(`✅ 抓到用戶: ${profile.displayName}`);
-                        log(`ID: ${profile.userId}`);
-                        setStatus(`嗨，${profile.displayName}！測試成功`, 'green');
-                        alert(`成功！抓到 ID: ${profile.userId}`);
-                    })
-                    .catch(err => {
-                        log(`❌ 抓取 Profile 失敗: ${err.message}`);
-                    });
-            } else {
-                setStatus('尚未登入', 'orange');
-                log('偵測到未登入狀態');
-                document.getElementById('loginBtn').style.display = 'block';
-                // 自動嘗試登入
-                log('嘗試自動跳轉登入...');
-                liff.login(); 
-            }
         }
     </script>
 </body>
