@@ -3,355 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF 測試任務中心 - 超級除錯版</title>
+    <title>LIFF 快速驗證版</title>
     <script src="https://static.line-scdn.net/liff/sdk/2.23.0/liff.js"></script>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px; 
-            background-color: #f5f5f5;
-        }
-        .container { 
-            max-width: 400px; 
-            margin: 0 auto; 
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .info-box { 
-            border: 1px solid #ccc; 
-            padding: 15px; 
-            margin-top: 15px; 
-            border-radius: 8px; 
-            background-color: #fafafa;
-        }
-        h1 { 
-            color: #00B900; 
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        button { 
-            background-color: #00B900; 
-            color: white; 
-            padding: 12px 20px; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            width: 100%;
-            margin-top: 10px;
-        }
-        button:hover { 
-            background-color: #009900; 
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .status { 
-            padding: 10px; 
-            border-radius: 5px; 
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .status.loading { 
-            background-color: #fff3cd; 
-            color: #856404; 
-        }
-        .status.success { 
-            background-color: #d4edda; 
-            color: #155724; 
-        }
-        .status.error { 
-            background-color: #f8d7da; 
-            color: #721c24; 
-        }
-        .debug-log {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 15px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 11px;
-        }
-        .debug-log p {
-            margin: 5px 0;
-            padding: 3px;
-            border-bottom: 1px solid #e9ecef;
-            word-break: break-all;
-        }
-        .info-row {
-            margin: 10px 0;
-            padding: 8px;
-            background-color: white;
-            border-radius: 5px;
-        }
-        .info-label {
-            color: #666;
-            font-size: 14px;
-        }
-        .info-value {
-            color: #333;
-            font-weight: bold;
-            font-size: 16px;
-            word-break: break-all;
-        }
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #00B900; }
+        .info-box { background: #fafafa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
+        .points { font-size: 32px; color: #00B900; font-weight: bold; text-align: center; margin: 10px 0; }
+        
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; cursor: pointer; color: white; }
+        .btn-sign { background-color: #00B900; }
+        .btn-redeem { background-color: #FF5722; }
+        .btn-disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        #coupon-area { display: none; background: #fff3cd; padding: 10px; border: 1px dashed #orange; text-align: center; margin-top: 15px; }
+        #coupon-code { font-size: 24px; font-weight: bold; color: #d35400; }
+        
+        .log { font-size: 12px; color: #666; margin-top: 20px; white-space: pre-wrap; word-break: break-all; border-top: 1px solid #eee; padding-top: 10px;}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎯 Line 任務系統</h1>
-        <p style="text-align: center; color: #666; font-size: 14px;">超級除錯版 v3.0</p>
-
-        <div id="liff-status" class="status loading">正在初始化 LIFF...</div>
-
-        <div class="info-box">
-            <h3 style="margin-top: 0;">👤 會員資訊</h3>
-            <div class="info-row">
-                <div class="info-label">Line 名稱</div>
-                <div class="info-value" id="user-name">--</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">User ID</div>
-                <div class="info-value" id="user-id-display" style="font-size: 12px;">--</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">當前點數</div>
-                <div class="info-value" id="current-points" style="color: #00B900; font-size: 24px;">0 點</div>
-            </div>
-        </div>
+        <h2>🚀 任務與兌換 Demo</h2>
         
-        <div class="info-box" id="task-area" style="display:none;">
-            <h3 style="margin-top: 0;">✅ 每日任務</h3>
-            <button id="sign-in-btn" onclick="signInTask()">
-                📝 點擊簽到 (+10點)
-            </button>
-            <p id="task-message" style="text-align: center; margin-top: 10px; color: #666;"></p>
+        <div id="loading">正在讀取用戶資料...</div>
+
+        <div id="main-area" style="display:none;">
+            <div class="info-box">
+                <div>嗨，<span id="user-name">...</span></div>
+                <div style="font-size:12px; color:#999;" id="user-id"></div>
+                <div class="points"><span id="points-val">--</span> 點</div>
+                <div style="text-align:center; font-size:12px; color:#666;" id="last-sign"></div>
+            </div>
+
+            <button id="btn-sign" class="btn-sign" onclick="doAction('signIn')">📝 每日簽到 (+10點)</button>
+            <button id="btn-redeem" class="btn-redeem" onclick="doAction('redeem')">🎁 兌換序號 (扣50點)</button>
+            
+            <div id="coupon-area">
+                <p>🎉 兌換成功！您的序號：</p>
+                <div id="coupon-code"></div>
+            </div>
         </div>
 
-        <button id="liff-login" onclick="liffLogin()" style="display:none;">
-            🔐 請點擊登入 Line
-        </button>
-
-        <div class="debug-log" id="debug-log">
-            <strong>除錯日誌：</strong>
-        </div>
+        <div class="log" id="log"></div>
     </div>
-    
+
     <script>
-        // ========== 設定區 ==========
+        // ==========================================
+        // 請填入你的資訊
         const MY_LIFF_ID = '2008638301-NeqDPLxQ'; 
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSCWxqEMxkGRC-me5BIO-94u4IPpGWzPWp6OoBuZBpT3mOEu3GDz4vzQdX29BylXgq_Q/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymcqw5hiIwign5cQiQfgGfZJqqyQKcSbBnhxZ3OHdRep4tiKOncndilB6qbPHuMu3dKQ/exec'; 
+        // ==========================================
 
-        let currentUserId = null;
-        let initTimeout = null;
+        let myUserId = '';
 
-        // ========== 除錯工具 ==========
-        function addLog(message, type = 'info') {
-            const logDiv = document.getElementById('debug-log');
-            const timestamp = new Date().toLocaleTimeString('zh-TW');
-            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : '#333';
-            logDiv.innerHTML += `<p style="color: ${color}">[${timestamp}] ${message}</p>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
-            console.log(`[${timestamp}] ${message}`);
+        function log(msg) {
+            const el = document.getElementById('log');
+            el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + el.innerHTML;
         }
 
-        function updateStatus(message, type = 'loading') {
-            const statusDiv = document.getElementById('liff-status');
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
-        }
-
-        // ========== LIFF 初始化（加強版） ==========
-        function initializeLiff() {
-            addLog('🚀 應用程式啟動');
-            addLog(`當前網址: ${window.location.href}`);
-            addLog(`User Agent: ${navigator.userAgent.substring(0, 50)}...`);
-            addLog('---');
-            addLog('開始初始化 LIFF...');
-            addLog(`LIFF ID: ${MY_LIFF_ID}`);
-            
-            // 設置 10 秒超時
-            initTimeout = setTimeout(() => {
-                addLog('❌ LIFF 初始化超時 (10秒)！', 'error');
-                updateStatus('初始化超時，可能是網路問題或 LIFF 設定錯誤', 'error');
-                addLog('請檢查：', 'error');
-                addLog('1. LIFF ID 是否正確', 'error');
-                addLog('2. Endpoint URL 是否正確設定', 'error');
-                addLog('3. 網路連線是否正常', 'error');
-            }, 10000);
-
-            liff.init({ 
-                liffId: MY_LIFF_ID,
-                withLoginOnExternalBrowser: true
-            })
-            .then(() => {
-                clearTimeout(initTimeout);
-                addLog('✅ LIFF 初始化成功！', 'success');
-                updateStatus('LIFF 初始化成功', 'success');
-                
-                // 詳細環境資訊
-                addLog(`登入狀態: ${liff.isLoggedIn() ? '✅ 已登入' : '❌ 未登入'}`);
-                addLog(`執行環境: ${liff.isInClient() ? 'LINE App 內' : '外部瀏覽器'}`);
-                addLog(`LIFF OS: ${liff.getOS()}`);
-                addLog(`LIFF 語言: ${liff.getLanguage()}`);
-                addLog(`LIFF 版本: ${liff.getVersion()}`);
-                addLog(`是否為 API 可用: ${liff.isApiAvailable('shareTargetPicker')}`);
-                
-                if (liff.isLoggedIn()) {
-                    addLog('---');
-                    getUserProfile();
-                } else {
-                    updateStatus('尚未登入 Line', 'error');
-                    document.getElementById('liff-login').style.display = 'block';
-                    addLog('🔓 顯示登入按鈕');
-                }
-            })
-            .catch((err) => {
-                clearTimeout(initTimeout);
-                addLog(`❌ LIFF 初始化失敗！`, 'error');
-                addLog(`錯誤類型: ${err.name}`, 'error');
-                addLog(`錯誤訊息: ${err.message}`, 'error');
-                addLog(`錯誤堆疊: ${err.stack}`, 'error');
-                updateStatus(`初始化失敗: ${err.message}`, 'error');
-                
-                // 常見錯誤提示
-                if (err.message.includes('400')) {
-                    addLog('💡 可能原因：LIFF ID 錯誤或已被刪除', 'error');
-                } else if (err.message.includes('403')) {
-                    addLog('💡 可能原因：Endpoint URL 設定錯誤', 'error');
-                } else if (err.message.includes('network')) {
-                    addLog('💡 可能原因：網路連線問題', 'error');
-                }
-            });
-        }
-
-        // ========== 登入處理 ==========
-        function liffLogin() {
-            addLog('🔐 執行 LIFF 登入...');
-            liff.login({ redirectUri: window.location.href });
-        }
-
-        // ========== 獲取用戶資料 ==========
-        function getUserProfile() {
-            addLog('📋 開始獲取用戶資料...');
-            updateStatus('正在獲取用戶資料...', 'loading');
-            
-            liff.getProfile()
-            .then(profile => {
-                currentUserId = profile.userId;
-                
-                addLog(`✅ 成功獲取用戶資料`, 'success');
-                addLog(`- 名稱: ${profile.displayName}`);
-                addLog(`- User ID: ${currentUserId}`);
-                addLog(`- 狀態訊息: ${profile.statusMessage || '(無)'}`);
-                addLog(`- 頭像 URL: ${profile.pictureUrl ? '有' : '無'}`);
-                
-                document.getElementById('user-name').textContent = profile.displayName;
-                document.getElementById('user-id-display').textContent = currentUserId;
-                
-                // 顯示任務區塊
-                document.getElementById('task-area').style.display = 'block';
-                addLog('✅ 顯示任務區塊', 'success');
-                
-                updateStatus('登入成功！', 'success');
-                addLog('---');
-                
-                // 獲取點數
-                fetchPoints(currentUserId);
-            })
-            .catch((err) => {
-                addLog(`❌ 獲取用戶資料失敗`, 'error');
-                addLog(`錯誤: ${err.message}`, 'error');
-                updateStatus(`無法獲取個人資料: ${err.message}`, 'error');
-            });
-        }
-        
-        // ========== 查詢點數 ==========
-        function fetchPoints(userId) {
-            addLog('💰 開始查詢點數...');
-            
-            const url = `${APPS_SCRIPT_URL}?userId=${userId}&action=getPoints`;
-            addLog(`請求 URL: ${url.substring(0, 100)}...`);
-            
-            fetch(url)
-            .then(response => {
-                addLog(`伺服器回應狀態: ${response.status} ${response.statusText}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                addLog(`伺服器回應: ${JSON.stringify(data)}`);
-                
-                if (data.status === 'success') {
-                    document.getElementById('current-points').textContent = `${data.points} 點`;
-                    addLog(`✅ 當前點數: ${data.points}`, 'success');
-                    
-                    if (data.lastSignIn) {
-                        document.getElementById('task-message').textContent = 
-                            `上次簽到: ${data.lastSignIn}`;
-                        addLog(`上次簽到: ${data.lastSignIn}`);
+        // 初始化
+        window.onload = function() {
+            log('開始初始化 LIFF...');
+            liff.init({ liffId: MY_LIFF_ID })
+                .then(() => {
+                    if (!liff.isLoggedIn()) {
+                        log('尚未登入，導向登入頁...');
+                        liff.login();
+                        return;
                     }
-                } else {
-                    addLog(`❌ 查詢點數失敗: ${data.message}`, 'error');
-                }
-            })
-            .catch(err => {
-                addLog(`❌ 連線失敗: ${err.message}`, 'error');
-                addLog('請檢查 Apps Script URL 是否正確', 'error');
-            });
-        }
+                    return liff.getProfile();
+                })
+                .then(profile => {
+                    if (!profile) return;
+                    
+                    myUserId = profile.userId;
+                    document.getElementById('user-name').innerText = profile.displayName;
+                    document.getElementById('user-id').innerText = myUserId;
+                    
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('main-area').style.display = 'block';
+                    
+                    log(`抓到用戶ID: ${myUserId}`);
+                    
+                    // 馬上查詢一次點數
+                    doAction('getPoints');
+                })
+                .catch(err => {
+                    log('初始化失敗: ' + err.message);
+                    alert('初始化失敗: ' + err.message);
+                });
+        };
 
-        // ========== 簽到任務 ==========
-        function signInTask() {
-            if (!currentUserId) {
-                alert('請先登入！');
+        // 統一處理 API 請求 (GetPoints, SignIn, Redeem)
+        function doAction(actionName) {
+            if (!myUserId) {
+                alert('抓不到 User ID，無法執行');
                 return;
             }
 
-            addLog('✍️ 執行簽到任務...');
-            const btn = document.getElementById('sign-in-btn');
-            btn.disabled = true;
-            btn.textContent = '處理中...';
+            log(`執行動作: ${actionName}...`);
+            setLoading(true);
 
-            fetch(`${APPS_SCRIPT_URL}?userId=${currentUserId}&action=signIn`, {
-                method: 'POST'
+            // 使用 POST 避免 URL 過長，但忽略安全性
+            // 使用 application/x-www-form-urlencoded 確保 GAS 好讀取
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `userId=${myUserId}&action=${actionName}`
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                addLog(`簽到回應: ${JSON.stringify(data)}`);
-                
-                btn.disabled = false;
-                btn.textContent = '📝 點擊簽到 (+10點)';
-                
+                setLoading(false);
+                log(`伺服器回應: ${JSON.stringify(data)}`);
+
                 if (data.status === 'success') {
-                    document.getElementById('current-points').textContent = `${data.newPoints} 點`;
-                    document.getElementById('task-message').textContent = data.message;
-                    addLog(`✅ ${data.message}`, 'success');
-                    alert(`🎉 ${data.message}\n當前點數: ${data.newPoints}`);
+                    // 更新介面點數
+                    if (data.points !== undefined) updatePoints(data.points);
+                    if (data.newPoints !== undefined) updatePoints(data.newPoints);
+                    if (data.lastSignIn) document.getElementById('last-sign').innerText = '上次簽到: ' + data.lastSignIn;
+
+                    // 特殊處理：兌換成功
+                    if (actionName === 'redeem') {
+                        document.getElementById('coupon-area').style.display = 'block';
+                        document.getElementById('coupon-code').innerText = data.couponCode;
+                        alert('🎉 兌換成功！');
+                    }
+                    
+                    // 特殊處理：簽到成功
+                    if (actionName === 'signIn') {
+                        alert(data.message);
+                    }
+
                 } else {
-                    document.getElementById('task-message').textContent = data.message;
-                    addLog(`❌ ${data.message}`, 'error');
-                    alert(data.message);
+                    alert('❌ ' + data.message);
                 }
             })
             .catch(err => {
-                addLog(`❌ 簽到失敗: ${err.message}`, 'error');
-                btn.disabled = false;
-                btn.textContent = '📝 點擊簽到 (+10點)';
-                alert('簽到失敗，請稍後再試');
+                setLoading(false);
+                log('連線錯誤: ' + err.message);
+                alert('連線發生錯誤，請看日誌');
             });
         }
 
-        // ========== 應用程式啟動 ==========
-        initializeLiff();
+        function updatePoints(pts) {
+            document.getElementById('points-val').innerText = pts;
+            // 如果點數 < 50，將兌換按鈕變灰 (視覺效果)
+            const redeemBtn = document.getElementById('btn-redeem');
+            if (pts < 50) {
+                redeemBtn.classList.add('btn-disabled');
+                redeemBtn.innerText = `🎁 點數不足 (${pts}/50)`;
+            } else {
+                redeemBtn.classList.remove('btn-disabled');
+                redeemBtn.innerText = `🎁 兌換序號 (扣50點)`;
+            }
+        }
+
+        function setLoading(isLoading) {
+            const btns = document.querySelectorAll('button');
+            btns.forEach(b => b.disabled = isLoading);
+        }
     </script>
 </body>
 </html>
