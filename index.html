@@ -3,92 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF 暴力除錯</title>
+    <title>LIFF 任務系統 (CDN救援版)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/liff-type/2.22.3/liff.js"></script>
     <style>
-        body { padding: 20px; font-family: sans-serif; }
-        #log { background: #eee; padding: 10px; border: 1px solid #999; min-height: 100px; font-family: monospace; }
-        h2 { color: #d32f2f; }
-        button { font-size: 20px; padding: 20px; width: 100%; margin-top: 20px; background: #00B900; color: white; border: none; border-radius: 8px;}
+        body { font-family: "Microsoft JhengHei", sans-serif; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #00B900; }
+        .info-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
+        .points { font-size: 36px; color: #00B900; font-weight: bold; text-align: center; margin: 15px 0; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-sign { background-color: #00B900; }
+        .btn-redeem { background-color: #FF5722; }
+        .btn-disabled { background-color: #ccc; cursor: not-allowed; }
+        #coupon-area { display: none; background: #fff3cd; padding: 15px; border: 2px dashed #ffc107; text-align: center; margin-top: 15px; border-radius: 8px; }
+        #coupon-code { font-size: 24px; font-weight: bold; color: #d35400; margin-top: 5px; }
+        .log { font-size: 11px; color: #999; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; font-family: monospace; }
     </style>
-    
-    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-    <script>
-        // 初始化 vConsole
-        var vConsole = new VConsole();
-    </script>
 </head>
 <body>
-    <h2>🤬 暴力除錯模式</h2>
-    <p>請點擊右下角的綠色按鈕 `vConsole`，然後點 `Log` 頁籤截圖給我看。</p>
-    
-    <div id="status">程式載入中...</div>
-    <div id="log"></div>
-    
-    <button onclick="window.location.reload()">🔄 重新整理頁面</button>
+    <div class="container">
+        <h2>🚀 任務系統</h2>
+        
+        <div id="loading" style="text-align: center;">
+            <p>正在連線...</p>
+            <p style="font-size:12px; color:#999;">(使用救援線路)</p>
+        </div>
+
+        <div id="main-area" style="display:none;">
+            <div class="info-box">
+                <div>嗨，<span id="user-name">--</span></div>
+                <div class="points"><span id="points-val">--</span> 點</div>
+                <div style="text-align:center; font-size:12px; color:#999;" id="last-sign">上次簽到: --</div>
+            </div>
+
+            <button id="btn-sign" class="btn-sign" onclick="doAction('signIn')">📝 每日簽到 (+10點)</button>
+            <button id="btn-redeem" class="btn-redeem" onclick="doAction('redeem')">🎁 兌換序號 (扣50點)</button>
+            
+            <div id="coupon-area">
+                <div>🎉 兌換成功！您的序號：</div>
+                <div id="coupon-code"></div>
+            </div>
+        </div>
+
+        <div class="log" id="log"></div>
+    </div>
 
     <script>
-        // 設定你的 LIFF ID
-        const MY_LIFF_ID = '2008638301-NeqDPLxQ';
+        const MY_LIFF_ID = '2008638301-NeqDPLxQ'; 
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSCWxqEMxkGRC-me5BIO-94u4IPpGWzPWp6OoBuZBpT3mOEu3GDz4vzQdX29BylXgq_Q/exec'; 
 
-        function myLog(msg) {
+        let myUserId = '';
+
+        function log(msg) {
             const el = document.getElementById('log');
-            const time = new Date().toLocaleTimeString();
-            el.innerHTML += `[${time}] ${msg}<br>`;
-            console.log(msg); // 這會印在 vConsole 裡
+            el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + el.innerHTML;
         }
 
-        // 2. 捕捉全域錯誤 (如果語法錯了，這裡會抓到)
-        window.onerror = function(message, source, lineno, colno, error) {
-            myLog(`❌ 嚴重錯誤: ${message}`);
-            alert(`抓到了！錯誤：${message}`);
-        };
-
-        // 3. 動態載入 LIFF SDK (監控它到底有沒有載下來)
-        myLog('開始下載 LIFF SDK...');
-        
-        const script = document.createElement('script');
-        script.src = 'https://static.line-scdn.net/liff/sdk/2/liff.js';
-        
-        script.onload = function() {
-            myLog('SDK 下載成功，開始 init...');
-            initLiff();
-        };
-        
-        script.onerror = function() {
-            myLog('❌ SDK 下載失敗！可能是網路擋住了');
-            alert('SDK 下載失敗，請檢查網路');
-        };
-        
-        document.head.appendChild(script);
-
-        // 4. 初始化邏輯
-        function initLiff() {
+        window.onload = function() {
+            log('開始載入...');
+            
+            // 檢查 liff 是否載入成功
             if (!window.liff) {
-                myLog('❌ window.liff 還是空的！見鬼了');
+                alert('嚴重錯誤：LIFF SDK 無法載入 (即使換了線路)');
                 return;
             }
 
             liff.init({ liffId: MY_LIFF_ID })
                 .then(() => {
-                    myLog('✅ LIFF init 成功！');
-                    if (liff.isLoggedIn()) {
-                        liff.getProfile().then(p => {
-                            myLog(`🎉 抓到人名: ${p.displayName}`);
-                            document.getElementById('status').innerText = `嗨，${p.displayName}`;
-                            alert(`成功！抓到: ${p.displayName}`);
-                        });
-                    } else {
-                        myLog('尚未登入，準備跳轉...');
+                    log('LIFF 初始化成功');
+                    if (!liff.isLoggedIn()) {
                         liff.login();
+                        return;
                     }
+                    return liff.getProfile();
+                })
+                .then(profile => {
+                    if (!profile) return;
+                    myUserId = profile.userId;
+                    document.getElementById('user-name').innerText = profile.displayName;
+                    
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('main-area').style.display = 'block';
+                    
+                    doAction('getPoints');
                 })
                 .catch(err => {
-                    myLog(`❌ Init 失敗: ${err.code} ${err.message}`);
-                    // 這裡最重要，顯示詳細錯誤
-                    console.error(err); 
-                    alert(`Init 失敗: ${err.message}`);
+                    log('錯誤: ' + err.message);
+                    alert('初始化失敗: ' + err.message);
                 });
-        }
-    </script>
-</body>
-</html>
+        };
+
+        function doAction(actionName) {
+            if (!myUserId) return;
+            setLoading(true);
+            
+            // 使用 no-cors 模式或許能避開某些擋截，但這裡先維持標準 POST
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www
